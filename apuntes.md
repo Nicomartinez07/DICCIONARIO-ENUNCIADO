@@ -38,6 +38,7 @@ Insertar: seguís la misma secuencia. Si la clave ya existe, actualizás su valo
 
 Eliminar: liberás la copia de la clave, pero marcás la posición como ELIMINADA, no como VACIA. Si la dejaras VACIA, podrías cortar una búsqueda antes de tiempo y no encontrar una clave que quedó más adelante por una colisión.
 
+
 Iterar: recorrés el vector por índice e invocás la función solamente para las entradas OCUPADA. No necesitás un iterador de lista.
 
 En la inserción, si pasás por una posición ELIMINADA, guardala como posible lugar para insertar, pero seguí buscando hasta encontrar la clave o una posición VACIA: podría haber una copia de esa clave más adelante.
