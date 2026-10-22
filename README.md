@@ -4,20 +4,14 @@
 
 # TP
 
-> [!IMPORTANT]
-> Esto es una plantilla del informe donde cada sección está delimitada por su título. Se recomienda mantener las secciones y tomar los ejemplos de las mismas para hacer el informe. El contenido de las secciones y comentarios como este deben ser eliminados del informe presentado.
-
 ## Información del estudiante
 
-* (Nombre y Apellido)
-* (Padrón)
-* (Mail)
-* (Username de GitHub)
-
+* Nicolas Martinez
+* 115882
+* nmartinez@fi.uba.ar
+* Nicomartinez07
 ---
 
-> [!WARNING]
-> Tener en cuenta que el informe se solicita en el ámbito universitario; el texto debe ser coherente, gramatical y ortográficamente correcto y con vocabulario adecuado para dicho contexto.
 
 ## Índice
 * [1. Instrucciones](#1-Instrucciones)
@@ -33,22 +27,19 @@
 
 ## 1. Instrucciones
 
-> [!TIP]
-> Se recomienda fuertemente crear y usar un Makefile y colocar en esta sección los comandos Make.
-
 ### 1.1. Compilar el proyecto
 ```bash
-comando
+make
 ```
 
 ### 1.2. Ejecutar las pruebas
 ```bash
-comando
+make pruebas
 ```
 
 ### 1.3. Ejecutar el programa con Valgrind
 ```bash
-comando
+make valgrind_alumno
 ```
 
 ## 2. Funcionamiento
@@ -86,19 +77,11 @@ Realizar un diagrama de memoria de la estructura de memoria durante la ejecució
 ### 3.2. Análisis de complejidades
 Explicar las complejidades computacionales de las primitvas implementadas en el TP (las funciones del .h) en notación Big-O, justificando por qué cada una tiene esa determinada complejidad.
 
-### 3.2. Análisis de complejidades (EJEMPLO 1)
+### 3.2. Análisis de complejidades 
 
 * `fun1` tiene una complejidad de $O(1)$ ya que tiene como parámetro... y, al leer una línea....
 * `fun2` tiene una complejidad de $O(n)$ ya que tiene como parámetro..., la cual....
 * `fun3` tiene una complejidad de $O(n^2)$ ya que tiene como parámetro... y se encarga de....
-
-### 3.2. Análisis de complejidades (EJEMPLO 2)
-
-|      Función      |Complejidad|                 Justificación                  |
-|:-----------------:|:---------:|:----------------------------------------------:|
-|      `fun1`       |  $O(1)$   |Tiene como parámetro... y, al leer una línea....|
-|      `fun2`       |  $O(n)$   |Tiene como parámetro..., la cual....            |
-|      `fun3`       |  $O(n^2)$ |Tiene como parámetro... y se encarga de....     |
 
 ## 4. Decisiones de diseño y/o complejidades de implementación
 Explicar las decisiones de diseño y/o las complejidades de implementación que hubo durante la resolución del TP.
@@ -107,15 +90,14 @@ Explicar las decisiones de diseño y/o las complejidades de implementación que 
 La mayor complejidad en el TP se encuentra en la función `foo` que requiere hacer...; es por esto que decidí.... Además, decidí que el programa haga... para mejorar la implementación.
 
 ## 5. Respuestas a las preguntas teóricas
-Deberás incluir en esta sección las respuestas a las preguntas teóricas indicadas en el [enunciado](./ENUNCIADO.md) del TP.
 
-## 5. Respuestas a las preguntas teóricas (EJEMPLO)
-
-### 5.1. ¿Porqué...?
+### 5.1. Qué es un diccionario
 Respondido en su respectiva sección.
 
-### 5.2 ¿Cómo...?
+### 5.2 Qué es una función de hash Por qué es importante el tamaño de la tabla (tanto para tablas abiertas como cerradas)y qué características debe tener para nuestro problema en particular
 Para implementar el....
 
-### 5.3 ¿Cuál fue el...?
+### 5.3 Qué es una tabla de Hash y los diferentes métodos de resolución de colisiones vistos (encadenamiento, probing, etc)
 El motivo fue....
+
+### 5.4 Por qué es importante el tamaño de la tabla (tanto para tablas abiertas como cerradas)

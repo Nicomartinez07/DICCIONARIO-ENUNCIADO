@@ -22,10 +22,24 @@ struct diccionario {
 El estado explícito es importante: no conviene usar clave == NULL para representar cualquier posición libre, porque una posición eliminada debe distinguirse de una que nunca se ocupó.
 
 Cómo funciona cada operación
+
+
 Buscar: calculás la posición inicial con hash(clave) % capacidad y seguís probando posiciones. Si encontrás OCUPADA con la misma clave, la encontraste. Si encontrás ELIMINADA, seguís buscando. Si encontrás VACIA, la clave no está.
+
+Calcular indice -> Buscar en el indice indicado -> si estado ==  OCUPADO y son iguales las claves -> retornar el valor
+                                                    Estado == Eliminado -> avanzar al siguiente indice 
+                                                    Estado == Vacia -> Retornar null y dejar de iterar
+
+
+
 Insertar: seguís la misma secuencia. Si la clave ya existe, actualizás su valor y devolvés el anterior según el contrato de diccionario.h. Si no existe, guardás una copia de la clave en una posición libre o eliminada.
+
+
+
 Eliminar: liberás la copia de la clave, pero marcás la posición como ELIMINADA, no como VACIA. Si la dejaras VACIA, podrías cortar una búsqueda antes de tiempo y no encontrar una clave que quedó más adelante por una colisión.
+
 Iterar: recorrés el vector por índice e invocás la función solamente para las entradas OCUPADA. No necesitás un iterador de lista.
+
 En la inserción, si pasás por una posición ELIMINADA, guardala como posible lugar para insertar, pero seguí buscando hasta encontrar la clave o una posición VACIA: podría haber una copia de esa clave más adelante.
 
 Hash y crecimiento
