@@ -21,7 +21,10 @@ struct diccionario {
 };
 
 typedef struct iterador {
-	diccionario_t *d;
+	entrada_t *t;
+    size_t indice;
+    size_t cantidad;
+    size_t capacidad;
 } diccionario_iterador_t ;
 
 
@@ -75,11 +78,11 @@ bool buscar_posicion_clave(diccionario_t *d, char *clave, size_t *posicion_encon
 /*
  * Devuevle en posicion_encontrada el indice del primer espacio disponible para insertar. Si en esa posicion habia un elemento y se elimino, devuelve true. False en caso contrario.
  */
-bool buscar_posicion_disponible(diccionario_t *d, char *clave, size_t *posicion_encontrada) {
+bool buscar_posicion_disponible(diccionario_t *d, char *clave, size_t *posicion_encontrada, bool *posicion_estaba_eliminada) {
     if(!d || !clave || d->capacidad == 0) 
         return false;
 
-    bool eliminado = false;
+    bool encontro_posicion_disponible = false;
     bool seguir_buscando = true;
 
     size_t intento = 0;
@@ -92,15 +95,16 @@ bool buscar_posicion_disponible(diccionario_t *d, char *clave, size_t *posicion_
         
         if (actual.estado != OCUPADA) {
             seguir_buscando = false;
+            encontro_posicion_disponible = true;
             if(actual.estado == ELIMINADA) 
-                eliminado = true;
+                *posicion_estaba_eliminada = true;
             *posicion_encontrada = posicion;
         }
 
         intento++;
     }
 
-    return eliminado;
+    return encontro_posicion_disponible;
 }
 
 
@@ -138,7 +142,7 @@ bool insertar_en_tabla_nueva(entrada_t *tabla, size_t capacidad,
 bool rehash (diccionario_t *d) {
     size_t nueva_capacidad = d->capacidad * 1.5;
     
-    entrada_t *nueva_tabla = malloc(sizeof(entrada_t) * nueva_capacidad);
+    entrada_t *nueva_tabla = calloc(d->capacidad, sizeof(entrada_t));
     if(!nueva_tabla) 
         return false;
     
@@ -151,12 +155,15 @@ bool rehash (diccionario_t *d) {
                 return false;
             }
         }
+        i++;
     }
+    entrada_t *tabla_vieja = d->tabla;
 
     d->eliminadas = 0;
     d->capacidad = nueva_capacidad;
     d->tabla = nueva_tabla;
 
+    free(tabla_vieja);
     return true;
 }
 
@@ -165,7 +172,7 @@ bool rehash (diccionario_t *d) {
  */
 diccionario_t *diccionario_crear(unsigned capacidad_inicial) {
     diccionario_t *diccionario = malloc(sizeof(diccionario_t));
-    if(diccionario) {
+    if(!diccionario) {
         return NULL;
     }
 
@@ -173,10 +180,10 @@ diccionario_t *diccionario_crear(unsigned capacidad_inicial) {
         capacidad_inicial = 3;
     }
 
-    entrada_t *tabla = malloc(sizeof(entrada_t) * capacidad_inicial);
+    entrada_t *tabla = calloc(capacidad_inicial, sizeof(entrada_t));
     if(!tabla) {
-        return NULL;
         free(diccionario);
+        return NULL;
     }
 
     diccionario->tabla = tabla;
@@ -200,6 +207,7 @@ bool diccionario_insertar(diccionario_t *d, char *clave, void *valor,
 			  void **anterior) {
     if(!d || !clave || d->capacidad == 0) return false;
 
+    if(anterior) *anterior = NULL;
 
     size_t posicion = 0;
     bool esta_en_tabla = buscar_posicion_clave(d, clave, &posicion);
@@ -215,7 +223,7 @@ bool diccionario_insertar(diccionario_t *d, char *clave, void *valor,
      
 
     //factor de carga superado
-    while((d->cantidad / d->capacidad) >= 0.7) {
+    while((d->cantidad * 10) >= (d->capacidad * 7)) {
         if(!rehash(d)) {
             free(copia);
             return false;
@@ -224,22 +232,21 @@ bool diccionario_insertar(diccionario_t *d, char *clave, void *valor,
 
     //Funcion q busca primera posicion libre y guarda en una variable la primera posicion eliminada
     //Guardar alguna de las 2 para ver en cual inserto el dato
-    bool posicion_estaba_eliminada = buscar_posicion_disponible(d, clave , &posicion);
-
+    bool estaba_eliminada = false;
+    bool encontro_posicion_disponible = buscar_posicion_disponible(d, clave , &posicion, &estaba_eliminada);
+    if(!encontro_posicion_disponible) {
+        free(copia);
+        return false;
+    } 
 
     d->tabla[posicion].clave = copia;
     d->tabla[posicion].valor = valor;
     d->tabla[posicion].estado = OCUPADA;
     
     if(!esta_en_tabla) d->cantidad++;
-
-    //eliminado
-    if(posicion_estaba_eliminada) d->eliminadas--;
+    if(estaba_eliminada) d->eliminadas--;
     return true;
 }
-
-
-
 
 /*
  * Busca una clave en el diccionario y devuelve true si existe.
@@ -287,6 +294,8 @@ void *diccionario_eliminar(diccionario_t *d, char *clave) {
  * Devuelve la cantidad de claves almacenadas en el diccionario.
  */
 size_t diccionario_cantidad(diccionario_t *d) {
+    if (!d)
+		return 0;
     return d->cantidad;
 }
 
@@ -301,7 +310,6 @@ size_t diccionario_iterar(diccionario_t *d, bool (*f)(char *, void *, void *), v
 	size_t contador = 0;
     size_t invocaciones = 0;
 	bool seguir = true;
-    entrada_t actual = d->tabla[contador];
 
 	while (contador < d->capacidad && seguir) {
         entrada_t actual = d->tabla[contador];
@@ -365,8 +373,14 @@ diccionario_iterador_t *diccionario_iterador_crear(diccionario_t *d)
 	if (!it)
 		return NULL;
 
-	it->d = d;
+	it->t = d->tabla;
+    it->cantidad = d->cantidad;
+    it->capacidad = d->capacidad;
+    it->indice = 0;
 
+    while(it->indice < it->capacidad-1 && it->t[it->capacidad-1].estado != OCUPADA) {
+        it->indice++;
+    }
 	return it;
 }
 
@@ -377,7 +391,7 @@ bool diccionario_iterador_se_puede_iterar(diccionario_iterador_t *it)
 {
 	if (!it)
 		return false;
-	return it->actual != NULL;
+	return it->indice < it->capacidad;
 }
 
 /*
@@ -385,21 +399,25 @@ bool diccionario_iterador_se_puede_iterar(diccionario_iterador_t *it)
  */
 void diccionario_iterador_siguiente(diccionario_iterador_t *it)
 {
-	if (!it || !it->actual)
+	if (!it || it->indice >= it->capacidad)
 		return;
+    
+    it->indice++;
 
-	it->actual = it->actual->siguiente;
+    while(it->indice < it->capacidad-1 && it->t[it->indice].estado != OCUPADA) {
+        it->indice++;
+    }
 }
 
 /*
  * Devuelve el valor de la entrada actual iterada
  */
-void *diccionario_iterador_obtener_elemento(diccionario_iterador_t *it)
+void *diccionario_iterador_obtener_valor(diccionario_iterador_t *it)
 {
-	if (!it || !it->actual)
+	if (!it || it->indice >= it->capacidad)
 		return NULL;
 
-	return it->actual->dato;
+	return it->t[it->indice].valor;
 }
 
 /*

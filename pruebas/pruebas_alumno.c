@@ -22,6 +22,10 @@ int main()
 	pruebas_obtener();
 
 	pa2m_nuevo_grupo("");
+	pa2m_nuevo_grupo("==== PRUEBAS ITERAR ====");
+	pruebas_iterar();
+
+	pa2m_nuevo_grupo("");
 	pa2m_nuevo_grupo("==== PRUEBAS PROGRAMA ====");
 	pruebas_programa();
 
