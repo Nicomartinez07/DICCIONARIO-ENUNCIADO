@@ -1,4 +1,5 @@
 #include "diccionario.h"
+#include <string.h>
 
 typedef enum {
     VACIA,
@@ -19,8 +20,13 @@ struct diccionario {
     size_t eliminadas;
 };
 
+typedef struct iterador {
+	diccionario_t *d;
+} diccionario_iterador_t ;
+
+
 /*
- *
+ * Devuelve el valor de hash calculado para la cadena
  */
 unsigned long funcion_hash(char *cadena) {
     unsigned long hash = 0;
@@ -33,7 +39,11 @@ unsigned long funcion_hash(char *cadena) {
     return hash;
 }
 
-bool buscar_posicion(diccionario_t *d, char *clave, size_t *posicion_encontrada) {
+/*
+ * Busca si la clave ya existia en el diccionario. Si existia, devuelve true y en posicion_encontrada devuelve el indice en el cual se la encontro.
+ * En caso contrario, devuelve false.
+ */
+bool buscar_posicion_clave(diccionario_t *d, char *clave, size_t *posicion_encontrada) {
     if(!d || !clave || d->capacidad == 0) 
         return false;
 
@@ -61,8 +71,93 @@ bool buscar_posicion(diccionario_t *d, char *clave, size_t *posicion_encontrada)
     return encontrado;
 }
 
-void rehash () {
 
+/*
+ * Devuevle en posicion_encontrada el indice del primer espacio disponible para insertar. Si en esa posicion habia un elemento y se elimino, devuelve true. False en caso contrario.
+ */
+bool buscar_posicion_disponible(diccionario_t *d, char *clave, size_t *posicion_encontrada) {
+    if(!d || !clave || d->capacidad == 0) 
+        return false;
+
+    bool eliminado = false;
+    bool seguir_buscando = true;
+
+    size_t intento = 0;
+    unsigned long hash = funcion_hash(clave);
+    size_t inicio = hash % d->capacidad;
+
+    while(intento < d->capacidad && seguir_buscando) {
+        size_t posicion = (inicio + intento) % d->capacidad;;
+        entrada_t actual = d->tabla[posicion];
+        
+        if (actual.estado != OCUPADA) {
+            seguir_buscando = false;
+            if(actual.estado == ELIMINADA) 
+                eliminado = true;
+            *posicion_encontrada = posicion;
+        }
+
+        intento++;
+    }
+
+    return eliminado;
+}
+
+
+/*
+ * Copia la clave recibida por parametros
+ */
+char *copiar_clave(char *clave) {
+    size_t longitud = strlen(clave);
+    char *copia = malloc(sizeof(char) * longitud + 1);
+    if(!copia) return NULL;
+
+    strcpy(copia, clave);
+
+    return copia;
+}
+
+
+bool insertar_en_tabla_nueva(entrada_t *tabla, size_t capacidad,
+                              entrada_t entrada)
+{
+    size_t inicio = funcion_hash(entrada.clave) % capacidad;
+
+    for (size_t intento = 0; intento < capacidad; intento++) {
+        size_t posicion = (inicio + intento) % capacidad;
+
+        if (tabla[posicion].estado != OCUPADA) {
+            tabla[posicion] = entrada;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool rehash (diccionario_t *d) {
+    size_t nueva_capacidad = d->capacidad * 1.5;
+    
+    entrada_t *nueva_tabla = malloc(sizeof(entrada_t) * nueva_capacidad);
+    if(!nueva_tabla) 
+        return false;
+    
+    size_t i = 0;
+
+    while(i < d->capacidad ) {
+        if(d->tabla[i].estado == OCUPADA) {
+            if(!insertar_en_tabla_nueva(nueva_tabla, nueva_capacidad, d->tabla[i])) {
+                free(nueva_tabla);
+                return false;
+            }
+        }
+    }
+
+    d->eliminadas = 0;
+    d->capacidad = nueva_capacidad;
+    d->tabla = nueva_tabla;
+
+    return true;
 }
 
 /*
@@ -105,24 +200,41 @@ bool diccionario_insertar(diccionario_t *d, char *clave, void *valor,
 			  void **anterior) {
     if(!d || !clave || d->capacidad == 0) return false;
 
-    char* copia = clave;
-    size_t posicion = 0;
-    bool esta_en_tabla = buscar_posicion(d, clave, &posicion);
-    if(esta_en_tabla) {
-        d->tabla[posicion].valor = valor;
-    } else {
-        if(factor de carga superado) {
-            rehash()
-        }
 
-        //calcular posicion hash
-        //buscar posicion libre
+    size_t posicion = 0;
+    bool esta_en_tabla = buscar_posicion_clave(d, clave, &posicion);
+    if(esta_en_tabla) {
+        if(anterior)
+            *anterior = d->tabla[posicion].valor;
+        d->tabla[posicion].valor = valor;
+        return true;
+    } 
+    
+    char* copia = copiar_clave(clave);
+    if(!copia) return false;
+     
+
+    //factor de carga superado
+    while((d->cantidad / d->capacidad) >= 0.7) {
+        if(!rehash(d)) {
+            free(copia);
+            return false;
+        }
     }
+
+    //Funcion q busca primera posicion libre y guarda en una variable la primera posicion eliminada
+    //Guardar alguna de las 2 para ver en cual inserto el dato
+    bool posicion_estaba_eliminada = buscar_posicion_disponible(d, clave , &posicion);
+
 
     d->tabla[posicion].clave = copia;
     d->tabla[posicion].valor = valor;
     d->tabla[posicion].estado = OCUPADA;
-    d->cantidad++;
+    
+    if(!esta_en_tabla) d->cantidad++;
+
+    //eliminado
+    if(posicion_estaba_eliminada) d->eliminadas--;
     return true;
 }
 
@@ -134,7 +246,7 @@ bool diccionario_insertar(diccionario_t *d, char *clave, void *valor,
  */
 bool diccionario_buscar(diccionario_t *d, char *clave) {
     size_t posicion = 0;
-    return buscar_posicion(d, clave, &posicion);
+    return buscar_posicion_clave(d, clave, &posicion);
 }
 
 /*
@@ -142,7 +254,7 @@ bool diccionario_buscar(diccionario_t *d, char *clave) {
  */
 void *diccionario_obtener(diccionario_t *d, char *clave){
     size_t posicion = 0;
-    if(!buscar_posicion(d, clave, &posicion))
+    if(!buscar_posicion_clave(d, clave, &posicion))
         return NULL;
 
     return d->tabla[posicion].valor;
@@ -155,7 +267,7 @@ void *diccionario_obtener(diccionario_t *d, char *clave){
 void *diccionario_eliminar(diccionario_t *d, char *clave) {
     size_t posicion = 0;
 
-    if(!buscar_posicion(d, clave, &posicion))
+    if(!buscar_posicion_clave(d, clave, &posicion))
         return NULL;
 
     void *valor = d->tabla[posicion].valor;
@@ -182,10 +294,28 @@ size_t diccionario_cantidad(diccionario_t *d) {
  * Recorre el diccionario y aplica la función f a cada valor del diccionario.
    Devuelve la cantidad de veces que se invoca la función f.
  */
-size_t diccionario_iterar(diccionario_t *d, bool (*f)(char *, void *, void *),
-			  void *extra) {
+size_t diccionario_iterar(diccionario_t *d, bool (*f)(char *, void *, void *), void *extra) {
+    if (!d || !f)
+		return 0;
 
-              }
+	size_t contador = 0;
+    size_t invocaciones = 0;
+	bool seguir = true;
+    entrada_t actual = d->tabla[contador];
+
+	while (contador < d->capacidad && seguir) {
+        entrada_t actual = d->tabla[contador];
+
+        if(actual.estado == OCUPADA) {
+            seguir = f(actual.clave, actual.valor, extra);
+            invocaciones++;
+        }
+		
+		contador++;
+	}
+
+	return invocaciones;
+}
 
 /*
  * Destruye el diccionario y la memoria asociada.
@@ -193,7 +323,7 @@ size_t diccionario_iterar(diccionario_t *d, bool (*f)(char *, void *, void *),
 void diccionario_destruir(diccionario_t *d) {
     if(!d) return;
 
-    for(size_t i = 0; i < d->cantidad; i++) {
+    for(size_t i = 0; i < d->capacidad; i++) {
         if(d->tabla[i].estado == OCUPADA) {
             free(d->tabla[i].clave);
         }
@@ -202,10 +332,13 @@ void diccionario_destruir(diccionario_t *d) {
     free(d);
 }
 
+/*
+ * Destruye el diccionario y la memoria asociada, aplicandole la funcion destructor a cada valor del diccionario.
+ */
 void diccionario_destruir_todo(diccionario_t *d, void (*destructor)(void *)) {
     if(!d) return;
 
-    for(size_t i = 0; i < d->cantidad; i++) {
+    for(size_t i = 0; i < d->capacidad; i++) {
         if(d->tabla[i].estado == OCUPADA) {
             if(destructor) {
                 destructor(d->tabla[i].valor);
@@ -217,3 +350,65 @@ void diccionario_destruir_todo(diccionario_t *d, void (*destructor)(void *)) {
     free(d);
 }
 
+
+
+
+/*
+ * Crea un iterador de diccionario
+ */
+diccionario_iterador_t *diccionario_iterador_crear(diccionario_t *d)
+{
+	if (!d)
+		return NULL;
+
+	diccionario_iterador_t *it = malloc(sizeof(diccionario_iterador_t));
+	if (!it)
+		return NULL;
+
+	it->d = d;
+
+	return it;
+}
+
+/*
+ * Devuelve true si hay mas elementos para iterar
+ */
+bool diccionario_iterador_se_puede_iterar(diccionario_iterador_t *it)
+{
+	if (!it)
+		return false;
+	return it->actual != NULL;
+}
+
+/*
+ * Avanza a la siguiente iteración
+ */
+void diccionario_iterador_siguiente(diccionario_iterador_t *it)
+{
+	if (!it || !it->actual)
+		return;
+
+	it->actual = it->actual->siguiente;
+}
+
+/*
+ * Devuelve el elemento actual iterado
+ */
+void *diccionario_iterador_obtener_elemento(diccionario_iterador_t *it)
+{
+	if (!it || !it->actual)
+		return NULL;
+
+	return it->actual->dato;
+}
+
+/*
+ * Destruye el iterador
+ */
+void diccionario_iterador_destruir(diccionario_iterador_t *it)
+{
+	if (!it)
+		return;
+
+	free(it);
+}

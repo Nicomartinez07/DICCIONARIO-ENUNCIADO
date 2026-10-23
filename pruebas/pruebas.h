@@ -10,6 +10,14 @@
  * e implemente pruebas_tda_x(), declararla abajo e invocarla desde main().
  */
 
-void pruebas();
+void pruebas_programa();
+
+void pruebas_buscar();
+
+void pruebas_eliminar();
+
+void pruebas_insertar();
+
+void pruebas_obtener();
 
 #endif // PRUEBAS_H_
