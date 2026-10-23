@@ -371,7 +371,7 @@ diccionario_iterador_t *diccionario_iterador_crear(diccionario_t *d)
 }
 
 /*
- * Devuelve true si hay mas elementos para iterar
+ * Devuelve true si hay mas entradas para iterar
  */
 bool diccionario_iterador_se_puede_iterar(diccionario_iterador_t *it)
 {
@@ -392,7 +392,7 @@ void diccionario_iterador_siguiente(diccionario_iterador_t *it)
 }
 
 /*
- * Devuelve el elemento actual iterado
+ * Devuelve el valor de la entrada actual iterada
  */
 void *diccionario_iterador_obtener_elemento(diccionario_iterador_t *it)
 {
