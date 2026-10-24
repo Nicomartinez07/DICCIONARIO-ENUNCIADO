@@ -12,12 +12,6 @@
 
 void pruebas_programa();
 
-void pruebas_buscar();
-
-void pruebas_eliminar();
-
-void pruebas_insertar();
-
-void pruebas_obtener();
+void pruebas_diccionario();
 
 #endif // PRUEBAS_H_
