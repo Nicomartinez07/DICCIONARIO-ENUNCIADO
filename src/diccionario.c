@@ -378,10 +378,10 @@ void diccionario_destruir_todo(diccionario_t *d, void (*destructor)(void *))
 
 	for (size_t i = 0; i < d->capacidad; i++) {
 		if (d->tabla[i].estado == OCUPADA) {
+			free(d->tabla[i].clave);
 			if (destructor) {
 				destructor(d->tabla[i].valor);
 			}
-			free(d->tabla[i].clave);
 		}
 	}
 	free(d->tabla);

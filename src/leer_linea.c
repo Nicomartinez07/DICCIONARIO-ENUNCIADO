@@ -6,7 +6,7 @@
 
 #define ERROR -1
 
-const int CAPACIDAD_LECTURA = 128;
+const size_t CAPACIDAD_LECTURA = 128;
 
 /*
  * Agranda la capacidad del puntero hasta el tamaño necesario. 

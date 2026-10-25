@@ -6,7 +6,7 @@ int main()
 {
 	pa2m_nuevo_grupo(
 		"============== PRUEBAS DEL TP DICCIONARIO ===============");
-		
+
 	pa2m_nuevo_grupo("");
 	pa2m_nuevo_grupo("==== PRUEBAS DICCIONARIO ====");
 	pruebas_diccionario();
