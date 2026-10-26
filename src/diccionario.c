@@ -4,6 +4,8 @@
 const int DOBLE = 2;
 const int CERO = 0;
 const int CAPACIDAD_MINIMA = 3;
+const size_t FACTOR_CARGA_NUMERADOR = 7;
+const size_t FACTOR_CARGA_DENOMINADOR = 10;
 
 typedef enum { VACIA, OCUPADA, ELIMINADA } estado_t;
 
@@ -181,6 +183,7 @@ bool rehash(diccionario_t *d)
 		}
 		i++;
 	}
+	
 	entrada_t *tabla_vieja = d->tabla;
 
 	d->eliminadas = 0;
@@ -220,6 +223,48 @@ diccionario_t *diccionario_crear(unsigned int capacidad_inicial)
 }
 
 /*
+ * Busca primera posicion libre e inserta el elemento en esa posicion del la tabla. Devuele true si fue exitoso
+ */
+bool asegurar_capacidad_correcta(diccionario_t *d) {
+	bool salio_bien_rehash = true;
+
+	while ((d->cantidad * FACTOR_CARGA_DENOMINADOR) >= (d->capacidad * FACTOR_CARGA_NUMERADOR) &&
+	       salio_bien_rehash) {
+		salio_bien_rehash = rehash(d);
+	}
+
+	return salio_bien_rehash;
+}
+
+/*
+ * Busca primera posicion libre e inserta el elemento en esa posicion del la tabla. Devuele true si fue exitoso
+ */
+bool insertar_en_posicion_disponible(diccionario_t *d,
+					    char *clave,
+					    char *copia,
+					    void *valor)
+{
+	size_t posicion = CERO;
+	bool estaba_eliminada = false;
+
+	bool hay_posicion_disponible = buscar_posicion_disponible(
+		d, clave, &posicion, &estaba_eliminada);
+
+	if (!hay_posicion_disponible)
+		return false;
+
+	d->tabla[posicion].clave = copia;
+	d->tabla[posicion].valor = valor;
+	d->tabla[posicion].estado = OCUPADA;
+
+	d->cantidad++;
+	if (estaba_eliminada)
+		d->eliminadas--;
+
+	return true;
+}
+
+/*
  * Inserta clave/valor, devuelve true si pudo o false si no pudo. Si ya existía
  * la clave apunta anterior al valor asociado anteriormente.
  *
@@ -249,32 +294,13 @@ bool diccionario_insertar(diccionario_t *d, char *clave, void *valor,
 	if (!copia)
 		return false;
 
-	//factor de carga superado
-	while ((d->cantidad * 10) >= (d->capacidad * 7)) {
-		if (!rehash(d)) {
-			free(copia);
-			return false;
-		}
-	}
-
-	//Funcion q busca primera posicion libre y guarda en una variable la primera posicion eliminada
-	//Guardar alguna de las 2 para ver en cual inserto el dato
-	bool estaba_eliminada = false;
-	bool encontro_posicion_disponible = buscar_posicion_disponible(
-		d, clave, &posicion, &estaba_eliminada);
-	if (!encontro_posicion_disponible) {
+	if (!asegurar_capacidad_correcta(d)) {
 		free(copia);
 		return false;
 	}
+	
+	insertar_en_posicion_disponible(d, clave, copia, valor);
 
-	d->tabla[posicion].clave = copia;
-	d->tabla[posicion].valor = valor;
-	d->tabla[posicion].estado = OCUPADA;
-
-	if (!esta_en_tabla)
-		d->cantidad++;
-	if (estaba_eliminada)
-		d->eliminadas--;
 	return true;
 }
 

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define ESCRITURA "r"
+#define LECTURA "r"
 
 const int ERROR = -1;
 const int EXITO = 0;
@@ -37,9 +37,21 @@ char *copiar_texto(const char *texto)
 }
 
 /*
- * Dado un texto, por cada palabra la busca como clave en el diccionario y la reemplaza por el valor asociado en el caso de que se encuentre en el diccionario.
- * En el caso de no estar en el diccionario, imprime la misma palabra
- * A su vez, cada carater que no este contenido en una palabra lo imprime tambien.
+ * Dado una palabra, la busca como clave en el diccionario e imprimer el valor asociado en el caso de que se encuentre en el diccionario.
+ * En el caso de no estar en el diccionario, imprime la misma palabra.
+ */
+void imprimir_palabra(diccionario_t *diccionario, char* palabra) {
+	void *reemplazo = diccionario_obtener(diccionario, palabra);
+
+	if (reemplazo) {
+		printf("%s", (char *)reemplazo);
+	} else {
+		printf("%s", palabra);
+	}
+}
+
+/*
+ * Parsea un texto recorriendo por palabras y lo imprime a medida que lo va recorriendo.
  */
 void imprimir_texto(diccionario_t *diccionario, const char *texto)
 {
@@ -57,26 +69,22 @@ void imprimir_texto(diccionario_t *diccionario, const char *texto)
 			cursor++;
 		}
 
-		if (*cursor == CARACTER_CERO_LITERAL)
-			break;
+		if (*cursor != CARACTER_CERO_LITERAL) {
+			char *comienzo_de_palabra = cursor;
 
-		char *comienzo_de_palabra = cursor;
-		while (*cursor != CARACTER_CERO_LITERAL && *cursor != CARACTER_VACIO && *cursor != CARACTER_SALTO_LINEA) {
-			cursor++;
+			while (*cursor != CARACTER_CERO_LITERAL &&
+			       *cursor != CARACTER_VACIO &&
+			       *cursor != CARACTER_SALTO_LINEA) {
+				cursor++;
+			}
+
+			char ultimo_caracter_de_palabra = *cursor;
+			*cursor = CARACTER_CERO_LITERAL;
+
+			imprimir_palabra(diccionario, comienzo_de_palabra);
+
+			*cursor = ultimo_caracter_de_palabra;	
 		}
-
-		char ultimo_caracter_de_palabra = *cursor;
-		*cursor = CARACTER_CERO_LITERAL;
-
-		void *reemplazo =
-			diccionario_obtener(diccionario, comienzo_de_palabra);
-		if (reemplazo) {
-			printf("%s", (char *)reemplazo);
-		} else {
-			printf("%s", comienzo_de_palabra);
-		}
-
-		*cursor = ultimo_caracter_de_palabra;
 	}
 
 	printf("\n");
@@ -94,7 +102,7 @@ bool parsear_archivo(diccionario_t *diccionario, const char *nombre_archivo)
 	if (!diccionario || !nombre_archivo)
 		return false;
 
-	FILE *archivo = fopen(nombre_archivo, ESCRITURA);
+	FILE *archivo = fopen(nombre_archivo, LECTURA);
 	if (!archivo)
 		return false;
 
@@ -104,37 +112,32 @@ bool parsear_archivo(diccionario_t *diccionario, const char *nombre_archivo)
 	while ((linea = leer_linea(archivo)) != NULL && resultado_guardar) {
 		size_t longitud = strlen(linea);
 		if ((linea[longitud - 1] == CARACTER_SALTO_LINEA ||
-		     linea[longitud - 1] == CARACTER_ESCAPE)) {
+			linea[longitud - 1] == CARACTER_ESCAPE)) {
 			linea[longitud - 1] = CARACTER_CERO_LITERAL;
 		}
 
 		char *division = strchr(linea, CARACTER_COMA);
 		if (!division) {
-			free(linea);
 			resultado_guardar = false;
-			continue;
-		}
+		} else {
+			*division = CARACTER_CERO_LITERAL;
+			char *reemplazo = copiar_texto(division + 1);
 
-		*division = CARACTER_CERO_LITERAL;
-		char *reemplazo = copiar_texto(division + 1);
-		if (!reemplazo) {
-			free(linea);
-			resultado_guardar = false;
-			continue;
-		}
+			if (!reemplazo) {
+				resultado_guardar = false;
+			} else {
+				void *anterior = NULL;
 
-		void *anterior = NULL;
-		if (!diccionario_insertar(diccionario, linea, reemplazo,
-					  &anterior)) {
-			free(reemplazo);
-			free(linea);
-			resultado_guardar = false;
+				if (!diccionario_insertar(diccionario, linea, reemplazo,
+							&anterior)) {
+					free(reemplazo);
+					resultado_guardar = false;
+				}
+				free(anterior);
+			}
 		}
-
-		free(anterior);
 		free(linea);
 	}
-
 	fclose(archivo);
 
 	if (resultado_guardar)
