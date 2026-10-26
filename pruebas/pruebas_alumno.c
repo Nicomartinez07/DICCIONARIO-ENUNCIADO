@@ -11,9 +11,5 @@ int main()
 	pa2m_nuevo_grupo("==== PRUEBAS DICCIONARIO ====");
 	pruebas_diccionario();
 
-	pa2m_nuevo_grupo("");
-	pa2m_nuevo_grupo("==== PRUEBAS PROGRAMA ====");
-	pruebas_programa();
-
 	return pa2m_mostrar_reporte();
 }

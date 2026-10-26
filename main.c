@@ -11,9 +11,16 @@ const int ERROR = -1;
 const int EXITO = 0;
 const unsigned int CAPACIDAD_INICIAL = 3;
 const int CANTIDAD_ARG_NECESARIA = 3;
+const char CARACTER_CERO_LITERAL = '\0';
+const char CARACTER_VACIO = ' ';
+const char CARACTER_SALTO_LINEA = '\n';
+const char CARACTER_ESCAPE = '\r';
+const char CARACTER_COMA = ',';
+const int POSICION_ARCHIVO = 1;
+const int POSICION_TEXTO = 2;
 
 /*
- * 
+ * Copia el texto en una cadena nueva para no modificar el texto original.
  */
 char *copiar_texto(const char *texto)
 {
@@ -29,6 +36,11 @@ char *copiar_texto(const char *texto)
 	return copia;
 }
 
+/*
+ * Dado un texto, por cada palabra la busca como clave en el diccionario y la reemplaza por el valor asociado en el caso de que se encuentre en el diccionario.
+ * En el caso de no estar en el diccionario, imprime la misma palabra
+ * A su vez, cada carater que no este contenido en una palabra lo imprime tambien.
+ */
 void imprimir_texto(diccionario_t *diccionario, const char *texto)
 {
 	if (!diccionario || !texto)
@@ -39,22 +51,22 @@ void imprimir_texto(diccionario_t *diccionario, const char *texto)
 		return;
 
 	char *cursor = copia_del_texto;
-	while (*cursor != '\0') {
-		while (*cursor != '\0' && (*cursor == ' ' || *cursor == '\n')) {
+	while (*cursor != CARACTER_CERO_LITERAL) {
+		while (*cursor != CARACTER_CERO_LITERAL && (*cursor == CARACTER_VACIO || *cursor == CARACTER_SALTO_LINEA)) {
 			putchar(*cursor);
 			cursor++;
 		}
 
-		if (*cursor == '\0')
+		if (*cursor == CARACTER_CERO_LITERAL)
 			break;
 
 		char *comienzo_de_palabra = cursor;
-		while (*cursor != '\0' && *cursor != ' ' && *cursor != '\n') {
+		while (*cursor != CARACTER_CERO_LITERAL && *cursor != CARACTER_VACIO && *cursor != CARACTER_SALTO_LINEA) {
 			cursor++;
 		}
 
 		char ultimo_caracter_de_palabra = *cursor;
-		*cursor = '\0';
+		*cursor = CARACTER_CERO_LITERAL;
 
 		void *reemplazo =
 			diccionario_obtener(diccionario, comienzo_de_palabra);
@@ -67,9 +79,16 @@ void imprimir_texto(diccionario_t *diccionario, const char *texto)
 		*cursor = ultimo_caracter_de_palabra;
 	}
 
+	printf("\n");
 	free(copia_del_texto);
 }
 
+/*
+ * Parsea el archivo ingresado.
+ * Por cada linea del archivo, busca la coma separadora, 
+ * e inserta en el diccionario a la primera palabra como una clave y a la segunda como un valor.
+ * Devuelve true si pudo realizar la operacion con exito, false en caso contrario.
+ */
 bool parsear_archivo(diccionario_t *diccionario, const char *nombre_archivo)
 {
 	if (!diccionario || !nombre_archivo)
@@ -84,19 +103,19 @@ bool parsear_archivo(diccionario_t *diccionario, const char *nombre_archivo)
 
 	while ((linea = leer_linea(archivo)) != NULL && resultado_guardar) {
 		size_t longitud = strlen(linea);
-		if ((linea[longitud - 1] == '\n' ||
-		     linea[longitud - 1] == '\r')) {
-			linea[longitud - 1] = '\0';
+		if ((linea[longitud - 1] == CARACTER_SALTO_LINEA ||
+		     linea[longitud - 1] == CARACTER_ESCAPE)) {
+			linea[longitud - 1] = CARACTER_CERO_LITERAL;
 		}
 
-		char *division = strchr(linea, ',');
+		char *division = strchr(linea, CARACTER_COMA);
 		if (!division) {
 			free(linea);
 			resultado_guardar = false;
 			continue;
 		}
 
-		division = "\0";
+		*division = CARACTER_CERO_LITERAL;
 		char *reemplazo = copiar_texto(division + 1);
 		if (!reemplazo) {
 			free(linea);
@@ -123,10 +142,10 @@ bool parsear_archivo(diccionario_t *diccionario, const char *nombre_archivo)
 	return false;
 }
 
+
 int main(int argc, char const *argv[])
 {
-	if (argc <= CANTIDAD_ARG_NECESARIA) {
-		printf("Ejecucion incorrecta, uso: ./ejecutable <nombre_archivo> <texto>. \n");
+	if (argc != CANTIDAD_ARG_NECESARIA) {
 		return ERROR;
 	}
 
@@ -134,13 +153,13 @@ int main(int argc, char const *argv[])
 	if (!d)
 		return ERROR;
 
-	bool resultado_parsear = parsear_archivo(d, argv[1]);
+	bool resultado_parsear = parsear_archivo(d, argv[POSICION_ARCHIVO]);
 	if (!resultado_parsear) {
-		free(d);
+		diccionario_destruir_todo(d, free);
 		return ERROR;
 	}
 
-	imprimir_texto(d, (char *)argv[2]);
+	imprimir_texto(d, (char *)argv[POSICION_TEXTO]);
 
 	diccionario_destruir_todo(d, free);
 	return EXITO;

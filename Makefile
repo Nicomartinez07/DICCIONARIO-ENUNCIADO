@@ -12,6 +12,8 @@ pruebas: pruebas_alumno
 valgrind_alumno: pruebas_alumno
 	valgrind $(VALGRIND_FLAGS) ./pruebas_alumno
 
+valgrind_main: main
+	valgrind $(VALGRIND_FLAGS) ./main pruebas/archivo_pruebas.csv "algoritmos dos"
 
 pruebas_alumno: src/*.c pruebas/*.c
 	$(CC) $(CFLAGS) src/*.c pruebas/*.c -o pruebas_alumno
@@ -19,6 +21,9 @@ pruebas_alumno: src/*.c pruebas/*.c
 
 main: main.c src/*.c
 	$(CC) $(CFLAGS) main.c src/*.c -o main
+
+pruebas_main: main 
+	./main pruebas/archivo_pruebas.csv "algoritmos dos"
 
 
 clean:

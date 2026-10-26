@@ -10,8 +10,6 @@
  * e implemente pruebas_tda_x(), declararla abajo e invocarla desde main().
  */
 
-void pruebas_programa();
-
 void pruebas_diccionario();
 
 #endif // PRUEBAS_H_
