@@ -40,7 +40,8 @@ char *copiar_texto(const char *texto)
  * Dado una palabra, la busca como clave en el diccionario e imprimer el valor asociado en el caso de que se encuentre en el diccionario.
  * En el caso de no estar en el diccionario, imprime la misma palabra.
  */
-void imprimir_palabra(diccionario_t *diccionario, char* palabra) {
+void imprimir_palabra(diccionario_t *diccionario, char *palabra)
+{
 	void *reemplazo = diccionario_obtener(diccionario, palabra);
 
 	if (reemplazo) {
@@ -53,18 +54,20 @@ void imprimir_palabra(diccionario_t *diccionario, char* palabra) {
 /*
  * Parsea un texto recorriendo por palabras y lo imprime a medida que lo va recorriendo.
  */
-void imprimir_texto(diccionario_t *diccionario, const char *texto)
+int imprimir_texto(diccionario_t *diccionario, const char *texto)
 {
 	if (!diccionario || !texto)
-		return;
+		return ERROR;
 
 	char *copia_del_texto = copiar_texto(texto);
 	if (!copia_del_texto)
-		return;
+		return ERROR;
 
 	char *cursor = copia_del_texto;
 	while (*cursor != CARACTER_CERO_LITERAL) {
-		while (*cursor != CARACTER_CERO_LITERAL && (*cursor == CARACTER_VACIO || *cursor == CARACTER_SALTO_LINEA)) {
+		while (*cursor != CARACTER_CERO_LITERAL &&
+		       (*cursor == CARACTER_VACIO ||
+			*cursor == CARACTER_SALTO_LINEA)) {
 			putchar(*cursor);
 			cursor++;
 		}
@@ -83,12 +86,13 @@ void imprimir_texto(diccionario_t *diccionario, const char *texto)
 
 			imprimir_palabra(diccionario, comienzo_de_palabra);
 
-			*cursor = ultimo_caracter_de_palabra;	
+			*cursor = ultimo_caracter_de_palabra;
 		}
 	}
 
 	printf("\n");
 	free(copia_del_texto);
+	return EXITO;
 }
 
 /*
@@ -109,10 +113,10 @@ bool parsear_archivo(diccionario_t *diccionario, const char *nombre_archivo)
 	bool resultado_guardar = true;
 	char *linea = NULL;
 
-	while ((linea = leer_linea(archivo)) != NULL && resultado_guardar) {
+	while (resultado_guardar && (linea = leer_linea(archivo)) != NULL) {
 		size_t longitud = strlen(linea);
 		if ((linea[longitud - 1] == CARACTER_SALTO_LINEA ||
-			linea[longitud - 1] == CARACTER_ESCAPE)) {
+		     linea[longitud - 1] == CARACTER_ESCAPE)) {
 			linea[longitud - 1] = CARACTER_CERO_LITERAL;
 		}
 
@@ -128,8 +132,9 @@ bool parsear_archivo(diccionario_t *diccionario, const char *nombre_archivo)
 			} else {
 				void *anterior = NULL;
 
-				if (!diccionario_insertar(diccionario, linea, reemplazo,
-							&anterior)) {
+				if (!diccionario_insertar(diccionario, linea,
+							  reemplazo,
+							  &anterior)) {
 					free(reemplazo);
 					resultado_guardar = false;
 				}
@@ -144,7 +149,6 @@ bool parsear_archivo(diccionario_t *diccionario, const char *nombre_archivo)
 		return true;
 	return false;
 }
-
 
 int main(int argc, char const *argv[])
 {
@@ -162,7 +166,10 @@ int main(int argc, char const *argv[])
 		return ERROR;
 	}
 
-	imprimir_texto(d, (char *)argv[POSICION_TEXTO]);
+	if (imprimir_texto(d, (char *)argv[POSICION_TEXTO]) == ERROR) {
+		diccionario_destruir_todo(d, free);
+		return ERROR;
+	}
 
 	diccionario_destruir_todo(d, free);
 	return EXITO;

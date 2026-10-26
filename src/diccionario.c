@@ -1,9 +1,8 @@
 #include "diccionario.h"
 #include <string.h>
 
-const int DOBLE = 2;
-const int CERO = 0;
-const int CAPACIDAD_MINIMA = 3;
+const size_t DOBLE = 2;
+const unsigned int CAPACIDAD_MINIMA = 3;
 const size_t FACTOR_CARGA_NUMERADOR = 7;
 const size_t FACTOR_CARGA_DENOMINADOR = 10;
 
@@ -34,7 +33,7 @@ typedef struct iterador {
  */
 unsigned long funcion_hash(char *cadena)
 {
-	unsigned long hash = CERO;
+	unsigned long hash = 0;
 	unsigned char c;
 
 	while ((c = (unsigned char)*cadena++)) {
@@ -47,18 +46,16 @@ unsigned long funcion_hash(char *cadena)
 /*
  * Busca la posicion de una clave existente o una posicion disponible. En caso de encontrarlo devuelve true, false en caso contrario.
  */
-bool buscar_posicion(diccionario_t *d, char *clave,
-			    size_t *posicion_encontrada,
-			    bool buscar_disponible,
-			    bool *posicion_estaba_eliminada)
+bool buscar_posicion(diccionario_t *d, char *clave, size_t *posicion_encontrada,
+		     bool buscar_disponible, bool *posicion_estaba_eliminada)
 {
-	if (!d || !clave || !posicion_encontrada || d->capacidad == CERO)
+	if (!d || !clave || !posicion_encontrada || d->capacidad == 0)
 		return false;
 
 	bool encontrado = false;
 	bool seguir_buscando = true;
 
-	size_t intento = CERO;
+	size_t intento = 0;
 	unsigned long hash = funcion_hash(clave);
 	size_t inicio = hash % d->capacidad;
 
@@ -79,7 +76,7 @@ bool buscar_posicion(diccionario_t *d, char *clave,
 			if (actual.estado == VACIA) {
 				seguir_buscando = false;
 			} else if (actual.estado == OCUPADA &&
-				   strcmp(actual.clave, clave) == CERO) {
+				   strcmp(actual.clave, clave) == 0) {
 				encontrado = true;
 				*posicion_encontrada = posicion;
 			}
@@ -98,8 +95,7 @@ bool buscar_posicion(diccionario_t *d, char *clave,
 bool buscar_posicion_clave(diccionario_t *d, char *clave,
 			   size_t *posicion_encontrada)
 {
-	return buscar_posicion(d, clave, posicion_encontrada,
-			       false, NULL);
+	return buscar_posicion(d, clave, posicion_encontrada, false, NULL);
 }
 
 /*
@@ -114,8 +110,8 @@ bool buscar_posicion_disponible(diccionario_t *d, char *clave,
 	if (!posicion_estaba_eliminada)
 		return false;
 
-	return buscar_posicion(d, clave, posicion_encontrada,
-			       true, posicion_estaba_eliminada);
+	return buscar_posicion(d, clave, posicion_encontrada, true,
+			       posicion_estaba_eliminada);
 }
 
 /*
@@ -140,10 +136,10 @@ bool insertar_en_tabla_nueva(entrada_t *tabla, size_t capacidad,
 			     entrada_t entrada)
 {
 	size_t inicio = funcion_hash(entrada.clave) % capacidad;
-	size_t intento = CERO;
+	size_t intento = 0;
 	bool pudo_insertar = false;
 
-	while(intento < capacidad && !pudo_insertar) {
+	while (intento < capacidad && !pudo_insertar) {
 		size_t posicion = (inicio + intento) % capacidad;
 
 		if (tabla[posicion].estado != OCUPADA) {
@@ -163,13 +159,13 @@ bool insertar_en_tabla_nueva(entrada_t *tabla, size_t capacidad,
  */
 bool rehash(diccionario_t *d)
 {
-	size_t nueva_capacidad = d->capacidad + d->capacidad / (long unsigned)DOBLE;
+	size_t nueva_capacidad = d->capacidad + d->capacidad / DOBLE;
 
 	entrada_t *nueva_tabla = calloc(nueva_capacidad, sizeof(entrada_t));
 	if (!nueva_tabla)
 		return false;
 
-	size_t i = CERO;
+	size_t i = 0;
 	bool pudo_realizar_rehash = true;
 
 	while (i < d->capacidad && pudo_realizar_rehash) {
@@ -183,7 +179,7 @@ bool rehash(diccionario_t *d)
 		}
 		i++;
 	}
-	
+
 	entrada_t *tabla_vieja = d->tabla;
 
 	d->eliminadas = 0;
@@ -216,8 +212,8 @@ diccionario_t *diccionario_crear(unsigned int capacidad_inicial)
 
 	diccionario->tabla = tabla;
 	diccionario->capacidad = capacidad_inicial;
-	diccionario->cantidad = CERO;
-	diccionario->eliminadas = CERO;
+	diccionario->cantidad = 0;
+	diccionario->eliminadas = 0;
 
 	return diccionario;
 }
@@ -225,10 +221,12 @@ diccionario_t *diccionario_crear(unsigned int capacidad_inicial)
 /*
  * Busca primera posicion libre e inserta el elemento en esa posicion del la tabla. Devuele true si fue exitoso
  */
-bool asegurar_capacidad_correcta(diccionario_t *d) {
+bool asegurar_capacidad_correcta(diccionario_t *d)
+{
 	bool salio_bien_rehash = true;
 
-	while ((d->cantidad * FACTOR_CARGA_DENOMINADOR) >= (d->capacidad * FACTOR_CARGA_NUMERADOR) &&
+	while ((d->cantidad * FACTOR_CARGA_DENOMINADOR) >=
+		       (d->capacidad * FACTOR_CARGA_NUMERADOR) &&
 	       salio_bien_rehash) {
 		salio_bien_rehash = rehash(d);
 	}
@@ -239,12 +237,10 @@ bool asegurar_capacidad_correcta(diccionario_t *d) {
 /*
  * Busca primera posicion libre e inserta el elemento en esa posicion del la tabla. Devuele true si fue exitoso
  */
-bool insertar_en_posicion_disponible(diccionario_t *d,
-					    char *clave,
-					    char *copia,
-					    void *valor)
+bool insertar_en_posicion_disponible(diccionario_t *d, char *clave, char *copia,
+				     void *valor)
 {
-	size_t posicion = CERO;
+	size_t posicion = 0;
 	bool estaba_eliminada = false;
 
 	bool hay_posicion_disponible = buscar_posicion_disponible(
@@ -275,13 +271,13 @@ bool insertar_en_posicion_disponible(diccionario_t *d,
 bool diccionario_insertar(diccionario_t *d, char *clave, void *valor,
 			  void **anterior)
 {
-	if (!d || !clave || d->capacidad == CERO)
+	if (!d || !clave || d->capacidad == 0)
 		return false;
 
 	if (anterior)
 		*anterior = NULL;
 
-	size_t posicion = CERO;
+	size_t posicion = 0;
 	bool esta_en_tabla = buscar_posicion_clave(d, clave, &posicion);
 	if (esta_en_tabla) {
 		if (anterior)
@@ -298,7 +294,7 @@ bool diccionario_insertar(diccionario_t *d, char *clave, void *valor,
 		free(copia);
 		return false;
 	}
-	
+
 	insertar_en_posicion_disponible(d, clave, copia, valor);
 
 	return true;
@@ -309,10 +305,10 @@ bool diccionario_insertar(diccionario_t *d, char *clave, void *valor,
  */
 bool diccionario_buscar(diccionario_t *d, char *clave)
 {
-	if (!d || !clave || d->capacidad == CERO)
+	if (!d || !clave || d->capacidad == 0)
 		return false;
 
-	size_t posicion = CERO;
+	size_t posicion = 0;
 	return buscar_posicion_clave(d, clave, &posicion);
 }
 
@@ -321,10 +317,10 @@ bool diccionario_buscar(diccionario_t *d, char *clave)
  */
 void *diccionario_obtener(diccionario_t *d, char *clave)
 {
-	if (!d || !clave || d->capacidad == CERO)
+	if (!d || !clave || d->capacidad == 0)
 		return NULL;
 
-	size_t posicion = CERO;
+	size_t posicion = 0;
 	if (!buscar_posicion_clave(d, clave, &posicion))
 		return NULL;
 
@@ -336,10 +332,10 @@ void *diccionario_obtener(diccionario_t *d, char *clave)
  */
 void *diccionario_eliminar(diccionario_t *d, char *clave)
 {
-	if (!d || !clave || d->capacidad == CERO)
+	if (!d || !clave || d->capacidad == 0)
 		return NULL;
 
-	size_t posicion = CERO;
+	size_t posicion = 0;
 
 	if (!buscar_posicion_clave(d, clave, &posicion))
 		return NULL;
@@ -362,8 +358,8 @@ void *diccionario_eliminar(diccionario_t *d, char *clave)
  */
 size_t diccionario_cantidad(diccionario_t *d)
 {
-	if (!d || d->capacidad == CERO)
-		return CERO;
+	if (!d || d->capacidad == 0)
+		return 0;
 	return d->cantidad;
 }
 
@@ -374,11 +370,11 @@ size_t diccionario_cantidad(diccionario_t *d)
 size_t diccionario_iterar(diccionario_t *d, bool (*f)(char *, void *, void *),
 			  void *extra)
 {
-	if (!d || d->capacidad == CERO || !f)
-		return CERO;
+	if (!d || d->capacidad == 0 || !f)
+		return 0;
 
-	size_t contador = CERO;
-	size_t invocaciones = CERO;
+	size_t contador = 0;
+	size_t invocaciones = 0;
 	bool seguir = true;
 
 	while (contador < d->capacidad && seguir) {
@@ -403,7 +399,7 @@ void diccionario_destruir(diccionario_t *d)
 	if (!d)
 		return;
 
-	for (size_t i = CERO; i < d->capacidad; i++) {
+	for (size_t i = 0; i < d->capacidad; i++) {
 		if (d->tabla[i].estado == OCUPADA) {
 			free(d->tabla[i].clave);
 		}
@@ -420,7 +416,7 @@ void diccionario_destruir_todo(diccionario_t *d, void (*destructor)(void *))
 	if (!d)
 		return;
 
-	for (size_t i = CERO; i < d->capacidad; i++) {
+	for (size_t i = 0; i < d->capacidad; i++) {
 		if (d->tabla[i].estado == OCUPADA) {
 			free(d->tabla[i].clave);
 			if (destructor) {
@@ -447,7 +443,7 @@ diccionario_iterador_t *diccionario_iterador_crear(diccionario_t *d)
 	it->t = d->tabla;
 	it->cantidad = d->cantidad;
 	it->capacidad = d->capacidad;
-	it->indice = CERO;
+	it->indice = 0;
 
 	while (it->indice < it->capacidad - 1 &&
 	       it->t[it->capacidad - 1].estado != OCUPADA) {
